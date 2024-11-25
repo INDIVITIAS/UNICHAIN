@@ -69,22 +69,6 @@ get_ip_address() {
     echo "$ip_address"
 }
 
-# Основное меню
-show_menu() {
-    clear
-    draw_top_border
-    display_ascii
-    draw_middle_border
-    print_telegram_icon
-    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
-    draw_middle_border
-
-    # Текущая директория и IP-адрес
-    current_dir=$(pwd)
-    ip_address=$(get_ip_address)
-    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
-    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
-    draw_middle_border
 # Функция для установки Docker
 install_docker() {
     echo -e "${GREEN}🟢 Проверка и установка Docker...${RESET}"
@@ -94,7 +78,7 @@ install_docker() {
 
         sudo apt update
         sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - 
         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
         sudo apt update
         sudo apt install -y docker-ce docker-ce-cli containerd.io
@@ -199,62 +183,57 @@ delete_node() {
 display_private_key() {
     HOMEDIR="$HOME"
     echo -e "${YELLOW}Ваш приватный ключ:${RESET}"
-    if [[ -f "${HOMEDIR}/UNICHAIN/geth-data/geth/nodekey" ]]; then
-        cat "${HOMEDIR}/UNICHAIN/geth-data/geth/nodekey"
+    if [[ -f "${HOMEDIR}/.ethereum/keyfile" ]]; then
+        cat "${HOMEDIR}/.ethereum/keyfile"
     else
-        echo -e "${RED}❌ Файл с приватным ключом не найден!${RESET}"
+        echo -e "${RED}❌ Приватный ключ не найден!${RESET}"
     fi
     echo
     read -p "Нажмите Enter, чтобы вернуться в главное меню..."
 }
 
-# Основное меню
-show_menu() {
-    clear
-    draw_top_border
-    echo -e "${YELLOW}1. Установить ноду${RESET}"
-    echo -e "${YELLOW}2. Запустить ноду${RESET}"
-    echo -e "${YELLOW}3. Остановить ноду${RESET}"
-    echo -e "${YELLOW}4. Просмотреть логи${RESET}"
-    echo -e "${YELLOW}5. Изменить RPC${RESET}"
-    echo -e "${YELLOW}6. Удалить ноду${RESET}"
-    echo -e "${YELLOW}7. Показать приватный ключ${RESET}"
-    echo -e "${YELLOW}0. Выход${RESET}"
-    draw_bottom_border
-    read -p "Введите ваш выбор [0-7]: " choice
+# Функция просмотра логов ноды
+check_logs_op_node() {
+    echo -e "${CYAN}📄 Просмотр логов ноды...${RESET}"
+    HOMEDIR="$HOME"
+    LOGS_FILE="${HOMEDIR}/UNICHAIN/logs/op-node.log"
+
+    if [[ -f "$LOGS_FILE" ]]; then
+        cat "$LOGS_FILE"
+    else
+        echo -e "${RED}❌ Логи не найдены!${RESET}"
+    fi
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
 }
 
-# Основной цикл
+# Главное меню
 while true; do
-    show_menu
-    case $choice in
-        1)
-            install_node
-            ;;
-        2)
-            start_node
-            ;;
-        3)
-            stop_node
-            ;;
-        4)
-            check_logs_op_node
-            ;;
-        5)
-            change_rpc
-            ;;
-        6)
-            delete_node
-            ;;
-        7)
-            display_private_key
-            ;;
-        0)
-            echo -e "${GREEN}❌ Выход...${RESET}"
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}❌ Неверный выбор. Попробуйте снова.${RESET}"
-            ;;
+    clear
+    draw_top_border
+    echo -e "${CYAN}Добро пожаловать в утилиту по управлению нодой${RESET}"
+    print_telegram_icon
+    draw_middle_border
+    echo -e "${YELLOW}1) Установить ноду ${ICON_INSTALL}${RESET}"
+    echo -e "${YELLOW}2) Запустить ноду ${ICON_START}${RESET}"
+    echo -e "${YELLOW}3) Остановить ноду ${ICON_STOP}${RESET}"
+    echo -e "${YELLOW}4) Просмотр логов ноды ${ICON_LOGS}${RESET}"
+    echo -e "${YELLOW}5) Изменить RPC ${ICON_CHANGE_RPC}${RESET}"
+    echo -e "${YELLOW}6) Удалить ноду ${ICON_DELETE}${RESET}"
+    echo -e "${YELLOW}7) Показать приватный ключ ${ICON_WALLET}${RESET}"
+    echo -e "${YELLOW}8) Выход ${ICON_EXIT}${RESET}"
+    draw_bottom_border
+    read -p "Выберите действие: " option
+
+    case $option in
+        1) install_node ;;
+        2) start_node ;;
+        3) stop_node ;;
+        4) check_logs_op_node ;;
+        5) change_rpc ;;
+        6) delete_node ;;
+        7) display_private_key ;;
+        8) exit 0 ;;
+        *) echo -e "${RED}❌ Некорректный выбор!${RESET}" ;;
     esac
 done
