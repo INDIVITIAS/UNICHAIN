@@ -39,6 +39,52 @@ print_telegram_icon() {
     echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
 }
 
+# Вывод ASCII-логотипа и ссылок
+display_ascii() {
+    echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
+    echo -e "${CYAN}  /  _/  / |/ /  / _ \  /  _/| | / /  /  _//_  __/  /  _/  / _ |  / __/${RESET}"
+    echo -e "${CYAN} _/ /   /    /  / // / _/ /  | |/ /  _/ /   / /    _/ /   / __ | _\ \  ${RESET}"
+    echo -e "${CYAN}/___/  /_/|_/  /____/ /___/  |___/  /___/  /_/    /___/  /_/ |_|/___/  ${RESET}"
+    echo -e ""
+    echo -e "${YELLOW}Подписывайтесь на Telegram: https://t.me/CryptalikBTC${RESET}"
+    echo -e "${YELLOW}Подписывайтесь на YouTube: https://www.youtube.com/@Cryptalik${RESET}"
+    echo -e "${YELLOW}Здесь про аирдропы и ноды: https://t.me/indivitias${RESET}"
+    echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
+    echo -e ""
+    echo -e "${CYAN}Полезные команды:${RESET}"
+    echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ls"
+    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd docker-browser"
+    echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
+    echo -e ""
+}
+
+# Получение IP-адреса
+get_ip_address() {
+    ip_address=$(hostname -I | awk '{print $1}')
+    if [[ -z "$ip_address" ]]; then
+        echo -ne "${YELLOW}Не удалось автоматически определить IP-адрес.${RESET}"
+        echo -ne "${YELLOW} Пожалуйста, введите IP-адрес:${RESET} "
+        read ip_address
+    fi
+    echo "$ip_address"
+}
+
+# Основное меню
+show_menu() {
+    clear
+    draw_top_border
+    display_ascii
+    draw_middle_border
+    print_telegram_icon
+    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
+    draw_middle_border
+
+    # Текущая директория и IP-адрес
+    current_dir=$(pwd)
+    ip_address=$(get_ip_address)
+    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
+    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
+    draw_middle_border
 # Функция для установки Docker
 install_docker() {
     echo -e "${GREEN}🟢 Проверка и установка Docker...${RESET}"
