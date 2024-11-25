@@ -69,23 +69,6 @@ get_ip_address() {
     echo "$ip_address"
 }
 
-# Основное меню
-show_menu() {
-    clear
-    draw_top_border
-    display_ascii
-    draw_middle_border
-    print_telegram_icon
-    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
-    draw_middle_border
-
-    # Текущая директория и IP-адрес
-    current_dir=$(pwd)
-    ip_address=$(get_ip_address)
-    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
-    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
-    draw_middle_border
-
 # Установка ноды
 download_node() {
   echo 'Начинаю установку...'
@@ -160,48 +143,69 @@ exit_from_script() {
 }
 
 # Основное меню
-while true; do
+show_menu() {
     clear
+    draw_top_border
     display_ascii
-    sleep 2
-    echo -e "\n\nМеню:"
-    echo "1. 🚀 Установить ноду"
-    echo "2. 🔄 Перезагрузить ноду"
-    echo "3. ✅ Проверить ноду"
-    echo "4. 📜 Посмотреть логи Unichain (OP)"
-    echo "5. 📜 Посмотреть логи Unichain"
-    echo "6. 🛑 Остановить ноду"
-    echo "7. 🔑 Посмотреть приватный ключ"
-    echo -e "8. ❌ Выйти из скрипта\n"
-    read -p "Выберите пункт меню: " choice
+    draw_middle_border
+    print_telegram_icon
+    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
+    draw_middle_border
 
-    case $choice in
-      1)
-        download_node
-        ;;
-      2)
-        restart_node
-        ;;
-      3)
-        check_node
-        ;;
-      4)
-        check_logs_op_node
-        ;;
-      5)
-        check_logs_unichain
-        ;;
-      6)
-        stop_node
-        ;;
-      7)
-        display_private_key
-        ;;
-      8)
-        exit_from_script
-        ;;
-      *)
-        echo "Неверный пункт. Пожалуйста, выберите правильную цифру в меню."
-        ;;
-    esac
-done
+    # Текущая директория и IP-адрес
+    current_dir=$(pwd)
+    ip_address=$(get_ip_address)
+    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
+    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
+    draw_middle_border
+
+    # Основное меню
+    while true; do
+        clear
+        display_ascii
+        sleep 2
+        echo -e "\n\nМеню:"
+        echo "1. 🚀 Установить ноду"
+        echo "2. 🔄 Перезагрузить ноду"
+        echo "3. ✅ Проверить ноду"
+        echo "4. 📜 Посмотреть логи Unichain (OP)"
+        echo "5. 📜 Посмотреть логи Unichain"
+        echo "6. 🛑 Остановить ноду"
+        echo "7. 🔑 Посмотреть приватный ключ"
+        echo -e "8. ❌ Выйти из скрипта\n"
+        read -p "Выберите пункт меню: " choice
+
+        case $choice in
+          1)
+            download_node
+            ;;
+          2)
+            restart_node
+            ;;
+          3)
+            check_node
+            ;;
+          4)
+            check_logs_op_node
+            ;;
+          5)
+            check_logs_unichain
+            ;;
+          6)
+            stop_node
+            ;;
+          7)
+            display_private_key
+            ;;
+          8)
+            exit_from_script
+            ;;
+          *)
+            echo "Неверный пункт. Пожалуйста, выберите правильную цифру в меню."
+            ;;
+        esac
+    done
+}
+
+# Вызов основного меню
+show_menu
