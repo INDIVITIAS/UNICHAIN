@@ -71,75 +71,78 @@ get_ip_address() {
 
 # Установка ноды
 download_node() {
-  echo 'Начинаю установку...'
+    echo 'Начинаю установку...'
 
-  sudo apt update -y && sudo apt upgrade -y
-  sudo apt-get install make build-essential unzip lz4 gcc git jq -y
+    sudo apt update -y && sudo apt upgrade -y
+    sudo apt-get install make build-essential unzip lz4 gcc git jq -y
 
-  sudo apt install docker.io -y
+    sudo apt install docker.io -y
 
-  sudo systemctl start docker
-  sudo systemctl enable docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
 
-  sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
 
-  git clone https://github.com/Uniswap/unichain-node
-  cd unichain-node || { echo -e "Не получилось зайти в директорию"; return; }
+    git clone https://github.com/Uniswap/unichain-node
+    cd unichain-node || { echo -e "Не получилось зайти в директорию"; return 1; }
   
-  if [[ -f .env.sepolia ]]; then
-    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
-    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
-  else
-    echo -e "Sepolia ENV не было найдено"
-    return
-  fi
+    if [[ -f .env.sepolia ]]; then
+        sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
+        sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
+    else
+        echo -e "Sepolia ENV не было найдено"
+        return 1
+    fi
 
-  sudo docker-compose up -d
+    sudo docker-compose up -d
 }
 
 # Перезагрузка ноды
 restart_node() {
-  HOMEDIR="$HOME"
-  sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-  sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
+    HOMEDIR="$HOME"
+    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
+    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
 
-  echo 'Unichain был перезагружен'
+    echo 'Unichain был перезагружен'
 }
 
 # Проверка состояния ноды
 check_node() {
-  response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
-    -H "Content-Type: application/json" http://localhost:8545)
-
-  echo -e "${BLUE}RESPONSE:${RESET} $response"
+    response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
+        -H "Content-Type: application/json" http://localhost:8545)
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}Ошибка при подключении к RPC-сервису.${RESET}"
+        return 1
+    fi
+    echo -e "${BLUE}RESPONSE:${RESET} $response"
 }
 
 # Логи Unichain OP
 check_logs_op_node() {
-  sudo docker logs unichain-node-op-node-1
+    sudo docker logs unichain-node-op-node-1
 }
 
 # Логи Unichain
 check_logs_unichain() {
-  sudo docker logs unichain-node-execution-client-1
+    sudo docker logs unichain-node-execution-client-1
 }
 
 # Остановка ноды
 stop_node() {
-  HOMEDIR="$HOME"
-  sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
+    HOMEDIR="$HOME"
+    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
 }
 
 # Отображение приватного ключа
 display_private_key() {
-  cd $HOME
-  echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
+    cd $HOME || return
+    echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
 }
 
 # Выход из скрипта
 exit_from_script() {
-  exit 0
+    exit 0
 }
 
 # Основное меню
