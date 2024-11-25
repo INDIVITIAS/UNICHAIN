@@ -10,16 +10,13 @@ MAGENTA='\033[0;35m'
 RESET='\033[0m'
 
 # Иконки для пунктов меню
-ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
-ICON_LOGS="📄"
-ICON_STOP="⏹️"
-ICON_START="▶️"
-ICON_WALLET="💰"
+ICON_RESTART="🔄"
+ICON_CHECK="✅"
+ICON_LOG_OP_NODE="📄"
+ICON_LOG_EXEC_CLIENT="📄"
+ICON_DISABLE="⏹️"
 ICON_EXIT="❌"
-ICON_CHANGE_RPC="🔄"
-ICON_DELETE="🗑️"
-ICON_KEFIR="🍼"
 
 # Функции для рисования границ
 draw_top_border() {
@@ -32,10 +29,6 @@ draw_middle_border() {
 
 draw_bottom_border() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
-}
-
-print_telegram_icon() {
-    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
 }
 
 # Логотип и информация
@@ -52,44 +45,45 @@ display_ascii() {
     echo -e ""
     echo -e "${CYAN}Полезные команды:${RESET}"
     echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ll"
-    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd ocean"
-    echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
-    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из директории ocean:${RESET} bash OCEAN1.sh"
+    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из корня:${RESET} bash uni.sh"
     echo -e ""
 }
 
-# Функция для отображения меню
-show_menu() {
-    clear
-    draw_top_border
-    display_ascii
-    draw_middle_border
-    print_telegram_icon
-    draw_middle_border
-    echo -e "    ${GREEN}Добро пожаловать в интерфейс управления нодой Uniswap!${RESET}"
-    draw_middle_border
-    echo -e "    ${YELLOW}Выберите действие:${RESET}"
-    echo
-    echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL} Установить ноду"
-    echo -e "    ${CYAN}2.${RESET} ${ICON_START} Запустить ноду"
-    echo -e "    ${CYAN}3.${RESET} ${ICON_STOP} Остановить ноду"
-    echo -e "    ${CYAN}4.${RESET} ${ICON_LOGS} Посмотреть логи"
-    echo -e "    ${CYAN}5.${RESET} ${ICON_WALLET} Проверить баланс"
-    echo -e "    ${CYAN}6.${RESET} ${ICON_CHANGE_RPC} Изменить RPC"
-    echo -e "    ${CYAN}7.${RESET} ${ICON_DELETE} Удалить ноду"
-    echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Выход"
-    draw_bottom_border
-    echo -e "${CYAN}Введите ваш выбор [0-7]:${RESET}"
-    read -p " " choice
+# Проверка доступности портов
+check_ports() {
+    ports_tcp=(30303 8545 8546 9222 9545)
+    ports_udp=(30303 9222)
+    
+    # Проверяем TCP порты
+    for port in "${ports_tcp[@]}"; do
+        nc -zv 127.0.0.1 $port &>/dev/null
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}TCP порт $port доступен${RESET}"
+        else
+            echo -e "${RED}TCP порт $port занят или недоступен${RESET}"
+            return 1
+        fi
+    done
+
+    # Проверяем UDP порты
+    for port in "${ports_udp[@]}"; do
+        nc -zvu 127.0.0.1 $port &>/dev/null
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}UDP порт $port доступен${RESET}"
+        else
+            echo -e "${RED}UDP порт $port занят или недоступен${RESET}"
+            return 1
+        fi
+    done
 }
 
-# Функция для установки ноды
+# Установить ноду
 install_node() {
     cd
     if docker ps -a --format '{{.Names}}' | grep -q "^unichain-node-execution-client-1$"; then
         echo -e "${YELLOW}🟡 Нода уже установлена.${RESET}"
     else
-        echo -e "${GREEN}🛠️ Установка ноды...${RESET}"
+        echo -e "${GREEN}🟢 Установка ноды...${RESET}"
         sudo apt update && sudo apt upgrade -y
         sudo apt install docker.io -y
         sudo systemctl start docker
@@ -105,86 +99,108 @@ install_node() {
             sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
             sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
         else
-            echo -e "${RED}❌ Файл .env.sepolia не найден!${RESET}"
+            echo -e "${RED}❌ Не найден файл .env.sepolia!${RESET}"
             return
         fi
 
         sudo docker-compose up -d
+
         echo -e "${GREEN}✅ Нода успешно установлена.${RESET}"
     fi
     echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
 }
 
-# Функция для перезапуска ноды
-start_node() {
-    echo -e "${GREEN}▶️ Запуск ноды...${RESET}"
+# Перезагрузить ноду
+restart_node() {
+    echo -e "${GREEN}🔄 Перезагружаем ноду...${RESET}"
     HOMEDIR="$HOME"
+    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
     sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
-    echo -e "${GREEN}✅ Нода запущена.${RESET}"
+    echo -e "${GREEN}✅ Нода была перезагружена.${RESET}"
     echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
 }
 
-# Функция для остановки ноды
-stop_node() {
-    echo -e "${GREEN}⏹️ Остановка ноды...${RESET}"
+# Проверить ноду
+check_node() {
+    echo -e "${GREEN}✅ Проверка состояния ноды...${RESET}"
+    docker ps
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+}
+
+# Проверить логи ноды OP
+check_logs_op_node() {
+    echo -e "${GREEN}✅ Логи ноды OP...${RESET}"
+    docker logs -f unichain-node-op-node
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+}
+
+# Проверить логи Execution Client
+check_logs_execution_client() {
+    echo -e "${GREEN}✅ Логи Execution Client...${RESET}"
+    docker logs -f unichain-node-execution-client
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+}
+
+# Остановить ноду
+disable_node() {
+    echo -e "${GREEN}⏹️ Останавливаем ноду...${RESET}"
     HOMEDIR="$HOME"
     sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
     echo -e "${GREEN}✅ Нода остановлена.${RESET}"
     echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
 }
 
-# Функция для просмотра логов
-check_logs() {
-    echo -e "${GREEN}📄 Логи ноды...${RESET}"
-    sudo docker logs unichain-node-execution-client-1
+# Просмотр приватного ключа
+view_private_key() {
+    cd $HOME
+    if [ -f "unichain-node/geth-data/geth/nodekey" ]; then
+        echo -e "${CYAN}Ваш приватный ключ: ${RESET}"
+        cat unichain-node/geth-data/geth/nodekey
+    else
+        echo -e "${RED}❌ Приватный ключ не найден!${RESET}"
+    fi
     echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
+    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
 }
 
-# Функция для проверки баланса
-check_balance() {
-    echo -e "${GREEN}💰 Проверка баланса...${RESET}"
-    # Пример команды для проверки баланса
-    curl -s "https://api.etherscan.io/api?module=account&action=balance&address=0xYourAddress&tag=latest&apikey=YourAPIKey"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для изменения RPC
-change_rpc() {
-    echo -e "${GREEN}🔄 Изменение RPC...${RESET}"
-    # Пример команды для изменения RPC
-    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://new-rpc-url.com|' .env.sepolia
-    echo -e "${GREEN}✅ RPC изменен.${RESET}"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для удаления ноды
-delete_node() {
-    echo -e "${RED}🗑️ Удаление ноды...${RESET}"
-    HOMEDIR="$HOME"
-    sudo rm -rf "${HOMEDIR}/unichain-node"
-    echo -e "${GREEN}✅ Нода удалена.${RESET}"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Главная логика меню
+# Главная логика программы
 while true; do
-    show_menu
+    check_ports
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Некоторые порты заняты или недоступны. Скрипт завершает работу.${RESET}"
+        exit 1
+    fi
+
+    clear
+    draw_top_border
+    display_ascii
+    draw_bottom_border
+    echo -e "${CYAN}Выберите действие: ${RESET}"
+    echo -e "1) Установить ноду"
+    echo -e "2) Перезагрузить ноду"
+    echo -e "3) Проверить состояние ноды"
+    echo -e "4) Просмотреть логи OP ноды"
+    echo -e "5) Просмотреть логи Execution Client"
+    echo -e "6) Остановить ноду"
+    echo -e "7) Просмотр приватного ключа"
+    echo -e "0) Выход"
+    read -p "Ваш выбор: " choice
+
     case $choice in
         1) install_node ;;
-        2) start_node ;;
-        3) stop_node ;;
-        4) check_logs ;;
-        5) check_balance ;;
-        6) change_rpc ;;
-        7) delete_node ;;
-        0) echo -e "${RED}❌ Выход...${RESET}"; break ;;
-        *) echo -e "${RED}Неверный выбор, попробуйте снова.${RESET}" ;;
+        2) restart_node ;;
+        3) check_node ;;
+        4) check_logs_op_node ;;
+        5) check_logs_execution_client ;;
+        6) disable_node ;;
+        7) view_private_key ;;
+        0) break ;;
+        *) echo -e "${RED}❌ Неверный выбор. Пожалуйста, выберите число от 0 до 7.${RESET}" ;;
     esac
 done
