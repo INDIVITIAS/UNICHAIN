@@ -12,12 +12,14 @@ RESET='\033[0m'
 # Иконки для пунктов меню
 ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
-ICON_RESTART="🔄"
-ICON_CHECK="✅"
-ICON_LOG_OP_NODE="📄"
-ICON_LOG_EXEC_CLIENT="📄"
-ICON_DISABLE="⏹️"
+ICON_LOGS="📄"
+ICON_STOP="⏹️"
+ICON_START="▶️"
+ICON_WALLET="💰"
 ICON_EXIT="❌"
+ICON_CHANGE_RPC="🔄"
+ICON_DELETE="🗑️"
+ICON_KEFIR="🍼"
 
 # Функции для рисования границ
 draw_top_border() {
@@ -46,6 +48,13 @@ display_ascii() {
     echo -e "${YELLOW}Подписывайтесь на Telegram: https://t.me/CryptalikBTC${RESET}"
     echo -e "${YELLOW}Подписывайтесь на YouTube: https://www.youtube.com/@Cryptalik${RESET}"
     echo -e "${YELLOW}Здесь про аирдропы и ноды: https://t.me/indivitias${RESET}"
+    echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
+    echo -e ""
+    echo -e "${CYAN}Полезные команды:${RESET}"
+    echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ll"
+    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd ocean"
+    echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
+    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из директории ocean:${RESET} bash OCEAN1.sh"
     echo -e ""
 }
 
@@ -57,19 +66,24 @@ show_menu() {
     draw_middle_border
     print_telegram_icon
     draw_middle_border
+    echo -e "    ${GREEN}Добро пожаловать в интерфейс управления нодой Uniswap!${RESET}"
+    draw_middle_border
+    echo -e "    ${YELLOW}Выберите действие:${RESET}"
+    echo
     echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL} Установить ноду"
-    echo -e "    ${CYAN}2.${RESET} ${ICON_RESTART} Перезапустить ноду"
-    echo -e "    ${CYAN}3.${RESET} ${ICON_CHECK} Проверить статус ноды"
-    echo -e "    ${CYAN}4.${RESET} ${ICON_LOG_OP_NODE} Логи OP Node"
-    echo -e "    ${CYAN}5.${RESET} ${ICON_LOG_EXEC_CLIENT} Логи Execution Client"
-    echo -e "    ${CYAN}6.${RESET} ${ICON_DISABLE} Отключить ноду"
+    echo -e "    ${CYAN}2.${RESET} ${ICON_START} Запустить ноду"
+    echo -e "    ${CYAN}3.${RESET} ${ICON_STOP} Остановить ноду"
+    echo -e "    ${CYAN}4.${RESET} ${ICON_LOGS} Посмотреть логи"
+    echo -e "    ${CYAN}5.${RESET} ${ICON_WALLET} Проверить баланс"
+    echo -e "    ${CYAN}6.${RESET} ${ICON_CHANGE_RPC} Изменить RPC"
+    echo -e "    ${CYAN}7.${RESET} ${ICON_DELETE} Удалить ноду"
     echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Выход"
     draw_bottom_border
-    echo
-    read -p "Выберите действие [0-6]: " choice
+    echo -e "${CYAN}Введите ваш выбор [0-7]:${RESET}"
+    read -p " " choice
 }
 
-# Установка ноды
+# Функция для установки ноды
 install_node() {
     cd
     if docker ps -a --format '{{.Names}}' | grep -q "^unichain-node-execution-client-1$"; then
@@ -98,68 +112,79 @@ install_node() {
         sudo docker-compose up -d
         echo -e "${GREEN}✅ Нода успешно установлена.${RESET}"
     fi
+    echo
     read -p "Нажмите Enter, чтобы вернуться в меню..."
 }
 
-# Перезапуск ноды
-restart_node() {
-    echo -e "${GREEN}🔄 Перезапуск ноды...${RESET}"
+# Функция для перезапуска ноды
+start_node() {
+    echo -e "${GREEN}▶️ Запуск ноды...${RESET}"
     HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
     sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
-    echo -e "${GREEN}✅ Нода была перезапущена.${RESET}"
+    echo -e "${GREEN}✅ Нода запущена.${RESET}"
+    echo
     read -p "Нажмите Enter, чтобы вернуться в меню..."
 }
 
-# Проверка статуса ноды
-check_node() {
-    echo -e "${GREEN}✅ Проверка статуса ноды...${RESET}"
-    response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
-      -H "Content-Type: application/json" http://localhost:8545)
-    echo -e "${BLUE}Ответ:${RESET} $response"
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Логи OP Node
-check_logs_op_node() {
-    echo -e "${GREEN}📄 Логи OP Node...${RESET}"
-    sudo docker logs unichain-node-op-node-1
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Логи Execution Client
-check_logs_execution_client() {
-    echo -e "${GREEN}📄 Логи Execution Client...${RESET}"
-    sudo docker logs unichain-node-execution-client-1
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Отключение ноды
-disable_node() {
-    echo -e "${GREEN}⏹️ Отключение ноды...${RESET}"
+# Функция для остановки ноды
+stop_node() {
+    echo -e "${GREEN}⏹️ Остановка ноды...${RESET}"
     HOMEDIR="$HOME"
     sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    echo -e "${GREEN}✅ Нода была отключена.${RESET}"
+    echo -e "${GREEN}✅ Нода остановлена.${RESET}"
+    echo
     read -p "Нажмите Enter, чтобы вернуться в меню..."
 }
 
-# Основной цикл меню
+# Функция для просмотра логов
+check_logs() {
+    echo -e "${GREEN}📄 Логи ноды...${RESET}"
+    sudo docker logs unichain-node-execution-client-1
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в меню..."
+}
+
+# Функция для проверки баланса
+check_balance() {
+    echo -e "${GREEN}💰 Проверка баланса...${RESET}"
+    # Пример команды для проверки баланса
+    curl -s "https://api.etherscan.io/api?module=account&action=balance&address=0xYourAddress&tag=latest&apikey=YourAPIKey"
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в меню..."
+}
+
+# Функция для изменения RPC
+change_rpc() {
+    echo -e "${GREEN}🔄 Изменение RPC...${RESET}"
+    # Пример команды для изменения RPC
+    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://new-rpc-url.com|' .env.sepolia
+    echo -e "${GREEN}✅ RPC изменен.${RESET}"
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в меню..."
+}
+
+# Функция для удаления ноды
+delete_node() {
+    echo -e "${RED}🗑️ Удаление ноды...${RESET}"
+    HOMEDIR="$HOME"
+    sudo rm -rf "${HOMEDIR}/unichain-node"
+    echo -e "${GREEN}✅ Нода удалена.${RESET}"
+    echo
+    read -p "Нажмите Enter, чтобы вернуться в меню..."
+}
+
+# Главная логика меню
 while true; do
     show_menu
     case $choice in
         1) install_node ;;
-        2) restart_node ;;
-        3) check_node ;;
-        4) check_logs_op_node ;;
-        5) check_logs_execution_client ;;
-        6) disable_node ;;
-        0)
-            echo -e "${GREEN}❌ Выход...${RESET}"
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}❌ Неверный выбор, попробуйте снова.${RESET}"
-            read -p "Нажмите Enter, чтобы продолжить..."
-            ;;
+        2) start_node ;;
+        3) stop_node ;;
+        4) check_logs ;;
+        5) check_balance ;;
+        6) change_rpc ;;
+        7) delete_node ;;
+        0) echo -e "${RED}❌ Выход...${RESET}"; break ;;
+        *) echo -e "${RED}Неверный выбор, попробуйте снова.${RESET}" ;;
     esac
 done
