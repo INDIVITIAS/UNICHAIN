@@ -10,13 +10,16 @@ MAGENTA='\033[0;35m'
 RESET='\033[0m'
 
 # Иконки для пунктов меню
+ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
-ICON_RESTART="🔄"
-ICON_CHECK="✅"
-ICON_LOG_OP_NODE="📄"
-ICON_LOG_EXEC_CLIENT="📄"
-ICON_DISABLE="⏹️"
+ICON_LOGS="📄"
+ICON_STOP="⏹️"
+ICON_START="▶️"
+ICON_WALLET="💰"
 ICON_EXIT="❌"
+ICON_CHANGE_RPC="🔄"
+ICON_DELETE="🗑️"
+ICON_KEFIR="🍼"
 
 # Функции для рисования границ
 draw_top_border() {
@@ -45,162 +48,118 @@ display_ascii() {
     echo -e ""
     echo -e "${CYAN}Полезные команды:${RESET}"
     echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ll"
-    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из корня:${RESET} bash uni.sh"
+    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd ocean"
+    echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
+    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из директории ocean:${RESET} bash OCEAN1.sh"
     echo -e ""
 }
 
-# Проверка доступности портов
-check_ports() {
-    ports_tcp=(30303 8545 8546 9222 9545)
-    ports_udp=(30303 9222)
-    
-    # Проверяем TCP порты
-    for port in "${ports_tcp[@]}"; do
-        nc -zv 127.0.0.1 $port &>/dev/null
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}TCP порт $port доступен${RESET}"
-        else
-            echo -e "${RED}TCP порт $port занят или недоступен${RESET}"
-            return 1
-        fi
-    done
+download_node() {
+  echo 'Начинаю установку...'
 
-    # Проверяем UDP порты
-    for port in "${ports_udp[@]}"; do
-        nc -zvu 127.0.0.1 $port &>/dev/null
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}UDP порт $port доступен${RESET}"
-        else
-            echo -e "${RED}UDP порт $port занят или недоступен${RESET}"
-            return 1
-        fi
-    done
+  sudo apt update -y && sudo apt upgrade -y
+  sudo apt-get install make build-essential unzip lz4 gcc git jq -y
+
+  sudo apt install docker.io -y
+
+  sudo systemctl start docker
+  sudo systemctl enable docker
+
+  sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  sudo chmod +x /usr/local/bin/docker-compose
+
+  git clone https://github.com/Uniswap/unichain-node
+  cd unichain-node || { echo -e "Не получилось зайти в директорию"; return; }
+  
+  if [[ -f .env.sepolia ]]; then
+    sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
+    sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
+  else
+    echo -e "Sepolia ENV не было найдено"
+    return
+  fi
+
+  sudo docker-compose up -d
 }
 
-# Установить ноду
-install_node() {
-    cd
-    if docker ps -a --format '{{.Names}}' | grep -q "^unichain-node-execution-client-1$"; then
-        echo -e "${YELLOW}🟡 Нода уже установлена.${RESET}"
-    else
-        echo -e "${GREEN}🟢 Установка ноды...${RESET}"
-        sudo apt update && sudo apt upgrade -y
-        sudo apt install docker.io -y
-        sudo systemctl start docker
-        sudo systemctl enable docker
-
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-
-        git clone https://github.com/Uniswap/unichain-node
-        cd unichain-node || { echo -e "${RED}❌ Не удалось зайти в директорию unichain-node.${RESET}"; return; }
-
-        if [[ -f .env.sepolia ]]; then
-            sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
-            sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
-        else
-            echo -e "${RED}❌ Не найден файл .env.sepolia!${RESET}"
-            return
-        fi
-
-        sudo docker-compose up -d
-
-        echo -e "${GREEN}✅ Нода успешно установлена.${RESET}"
-    fi
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
-}
-
-# Перезагрузить ноду
 restart_node() {
-    echo -e "${GREEN}🔄 Перезагружаем ноду...${RESET}"
-    HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
-    echo -e "${GREEN}✅ Нода была перезагружена.${RESET}"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+  HOMEDIR="$HOME"
+  sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
+  sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
+
+  echo 'Unichain был перезагружен'
 }
 
-# Проверить ноду
 check_node() {
-    echo -e "${GREEN}✅ Проверка состояния ноды...${RESET}"
-    docker ps
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+  response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
+    -H "Content-Type: application/json" http://localhost:8545)
+
+  echo -e "${BLUE}RESPONSE:${RESET} $response"
 }
 
-# Проверить логи ноды OP
 check_logs_op_node() {
-    echo -e "${GREEN}✅ Логи ноды OP...${RESET}"
-    docker logs -f unichain-node-op-node
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+  sudo docker logs unichain-node-op-node-1
 }
 
-# Проверить логи Execution Client
-check_logs_execution_client() {
-    echo -e "${GREEN}✅ Логи Execution Client...${RESET}"
-    docker logs -f unichain-node-execution-client
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+check_logs_unichain() {
+  sudo docker logs unichain-node-execution-client-1
 }
 
-# Остановить ноду
-disable_node() {
-    echo -e "${GREEN}⏹️ Останавливаем ноду...${RESET}"
-    HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    echo -e "${GREEN}✅ Нода остановлена.${RESET}"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+stop_node() {
+  HOMEDIR="$HOME"
+  sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
 }
 
-# Просмотр приватного ключа
-view_private_key() {
-    cd $HOME
-    if [ -f "unichain-node/geth-data/geth/nodekey" ]; then
-        echo -e "${CYAN}Ваш приватный ключ: ${RESET}"
-        cat unichain-node/geth-data/geth/nodekey
-    else
-        echo -e "${RED}❌ Приватный ключ не найден!${RESET}"
-    fi
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в главное меню..."
+display_private_key() {
+  cd $HOME
+  echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
 }
 
-# Главная логика программы
+exit_from_script() {
+  exit 0
+}
+
 while true; do
-    check_ports
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Некоторые порты заняты или недоступны. Скрипт завершает работу.${RESET}"
-        exit 1
-    fi
-
-    clear
-    draw_top_border
     display_ascii
-    draw_bottom_border
-    echo -e "${CYAN}Выберите действие: ${RESET}"
-    echo -e "1) Установить ноду"
-    echo -e "2) Перезагрузить ноду"
-    echo -e "3) Проверить состояние ноды"
-    echo -e "4) Просмотреть логи OP ноды"
-    echo -e "5) Просмотреть логи Execution Client"
-    echo -e "6) Остановить ноду"
-    echo -e "7) Просмотр приватного ключа"
-    echo -e "0) Выход"
-    read -p "Ваш выбор: " choice
+    sleep 2
+    echo -e "\n\nМеню:"
+    echo "1. 🚀 Установить ноду"
+    echo "2. 🔄 Перезагрузить ноду"
+    echo "3. ✅ Проверить ноду"
+    echo "4. 📜 Посмотреть логи Unichain (OP)"
+    echo "5. 📜 Посмотреть логи Unichain"
+    echo "6. 🛑 Остановить ноду"
+    echo "7. 🔑 Посмотреть приватный ключ"
+    echo -e "8. ❌ Выйти из скрипта\n"
+    read -p "Выберите пункт меню: " choice
 
     case $choice in
-        1) install_node ;;
-        2) restart_node ;;
-        3) check_node ;;
-        4) check_logs_op_node ;;
-        5) check_logs_execution_client ;;
-        6) disable_node ;;
-        7) view_private_key ;;
-        0) break ;;
-        *) echo -e "${RED}❌ Неверный выбор. Пожалуйста, выберите число от 0 до 7.${RESET}" ;;
+      1)
+        download_node
+        ;;
+      2)
+        restart_node
+        ;;
+      3)
+        check_node
+        ;;
+      4)
+        check_logs_op_node
+        ;;
+      5)
+        check_logs_unichain
+        ;;
+      6)
+        stop_node
+        ;;
+      7)
+        display_private_key
+        ;;
+      8)
+        exit_from_script
+        ;;
+      *)
+        echo "Неверный пункт. Пожалуйста, выберите правильную цифру в меню."
+        ;;
     esac
 done
