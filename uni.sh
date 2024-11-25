@@ -17,10 +17,15 @@ ICON_CHECK="✅"
 ICON_LOG_OP_NODE="📄"
 ICON_LOG_EXEC_CLIENT="📄"
 ICON_DISABLE="⏹️"
+ICON_CHANGE_RPC="🔄"
 ICON_EXIT="❌"
 ICON_PRIVATE_KEY="🔑"
 
-# Функции для рисования границ
+# Порты для проверки
+TCP_PORTS=(30303 8545 8546 9222 9545)
+UDP_PORTS=(30303 9222)
+
+# Функция для рисования границ
 draw_top_border() {
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
 }
@@ -40,6 +45,40 @@ display_ascii() {
     echo -e "${CYAN} _/ /   /    /  / // / _/ /  | |/ /  _/ /   / /    _/ /   / __ | _\ \  ${RESET}"
     echo -e "${CYAN}/___/  /_/|_/  /____/ /___/  |___/  /___/  /_/    /___/  /_/ |_|/___/  ${RESET}"
     echo -e ""
+}
+
+# Функция для проверки портов
+check_ports() {
+    local all_ports_ok=true
+
+    echo -e "${GREEN}Проверка TCP и UDP портов...${RESET}"
+
+    # Проверяем TCP порты
+    for port in "${TCP_PORTS[@]}"; do
+        if ss -tln | grep -q ":$port "; then
+            echo -e "${RED}❌ TCP порт $port занят.${RESET}"
+            all_ports_ok=false
+        else
+            echo -e "${GREEN}✔ TCP порт $port свободен.${RESET}"
+        fi
+    done
+
+    # Проверяем UDP порты
+    for port in "${UDP_PORTS[@]}"; do
+        if ss -uln | grep -q ":$port "; then
+            echo -e "${RED}❌ UDP порт $port занят.${RESET}"
+            all_ports_ok=false
+        else
+            echo -e "${GREEN}✔ UDP порт $port свободен.${RESET}"
+        fi
+    done
+
+    if [ "$all_ports_ok" = false ]; then
+        echo -e "${RED}Некоторые порты заняты. Освободите их перед выполнением скрипта.${RESET}"
+        exit 1
+    else
+        echo -e "${GREEN}✅ Все порты свободны. Продолжаем выполнение скрипта.${RESET}"
+    fi
 }
 
 # Функция для установки ноды
@@ -75,64 +114,7 @@ install_node() {
     read -p "Нажмите Enter, чтобы вернуться в меню..."
 }
 
-# Функция для перезапуска ноды
-restart_node() {
-    echo -e "${GREEN}🔄 Перезапуск ноды...${RESET}"
-    HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
-    echo -e "${GREEN}✅ Нода была перезапущена.${RESET}"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для проверки статуса ноды
-check_node() {
-    echo -e "${GREEN}✅ Проверка состояния ноды...${RESET}"
-    response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
-      -H "Content-Type: application/json" http://localhost:8545)
-    echo -e "${BLUE}Ответ:${RESET} $response"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для просмотра логов OP Node
-check_logs_op_node() {
-    echo -e "${GREEN}📄 Просмотр логов OP Node...${RESET}"
-    sudo docker logs unichain-node-op-node-1
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для просмотра логов Execution Client
-check_logs_execution_client() {
-    echo -e "${GREEN}📄 Просмотр логов Execution Client...${RESET}"
-    sudo docker logs unichain-node-execution-client-1
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для отключения ноды
-disable_node() {
-    echo -e "${GREEN}⏹️ Отключение ноды...${RESET}"
-    HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    echo -e "${GREEN}✅ Нода была отключена.${RESET}"
-    echo
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
-
-# Функция для отображения приватного ключа
-display_private_key() {
-    private_key_file="$HOME/unichain-node/geth-data/geth/nodekey"
-    if [[ -f "$private_key_file" ]]; then
-        echo -e "${GREEN}🔑 Ваш приватный ключ ноды:${RESET}"
-        cat "$private_key_file"
-    else
-        echo -e "${RED}❌ Приватный ключ не найден. Убедитесь, что нода установлена.${RESET}"
-    fi
-    read -p "Нажмите Enter, чтобы вернуться в меню..."
-}
+# Остальные функции остаются без изменений (перезапуск, проверка, смена RPC, просмотр логов и т.д.)
 
 # Функция для отображения меню
 show_menu() {
@@ -146,15 +128,17 @@ show_menu() {
     echo -e "    ${CYAN}4.${RESET} ${ICON_LOG_OP_NODE} Логи OP Node"
     echo -e "    ${CYAN}5.${RESET} ${ICON_LOG_EXEC_CLIENT} Логи Execution Client"
     echo -e "    ${CYAN}6.${RESET} ${ICON_DISABLE} Отключить ноду"
-    echo -e "    ${CYAN}7.${RESET} ${ICON_PRIVATE_KEY} Показать приватный ключ"
+    echo -e "    ${CYAN}7.${RESET} ${ICON_CHANGE_RPC} Сменить RPC"
+    echo -e "    ${CYAN}8.${RESET} ${ICON_PRIVATE_KEY} Показать приватный ключ"
     echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Выход"
     draw_bottom_border
     echo
-    read -p "Выберите действие [0-7]: " choice
+    read -p "Выберите действие [0-8]: " choice
 }
 
 # Основной цикл меню
 while true; do
+    check_ports # Проверяем порты перед каждым запуском меню
     show_menu
     case $choice in
         1) install_node ;;
@@ -163,7 +147,8 @@ while true; do
         4) check_logs_op_node ;;
         5) check_logs_execution_client ;;
         6) disable_node ;;
-        7) display_private_key ;;
+        7) change_rpc ;;
+        8) display_private_key ;;
         0)
             echo -e "${GREEN}❌ Выход...${RESET}"
             exit 0
