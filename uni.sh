@@ -12,20 +12,16 @@ RESET='\033[0m'
 # Иконки для пунктов меню
 ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
-ICON_RESTART="🔄"
-ICON_CHECK="✅"
-ICON_LOG_OP_NODE="📄"
-ICON_LOG_EXEC_CLIENT="📄"
-ICON_DISABLE="⏹️"
-ICON_CHANGE_RPC="🔄"
+ICON_LOGS="📄"
+ICON_STOP="⏹️"
+ICON_START="▶️"
+ICON_WALLET="💰"
 ICON_EXIT="❌"
-ICON_PRIVATE_KEY="🔑"
+ICON_CHANGE_RPC="🔄"
+ICON_DELETE="🗑️"
+ICON_KEFIR="🍼"
 
-# Порты для проверки
-TCP_PORTS=(30303 8545 8546 9222 9545)
-UDP_PORTS=(30303 9222)
-
-# Функция для рисования границ
+# Функции для рисования границ
 draw_top_border() {
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
 }
@@ -37,6 +33,9 @@ draw_middle_border() {
 draw_bottom_border() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
 }
+print_telegram_icon() {
+    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
+}
 
 # Логотип и информация
 display_ascii() {
@@ -45,7 +44,45 @@ display_ascii() {
     echo -e "${CYAN} _/ /   /    /  / // / _/ /  | |/ /  _/ /   / /    _/ /   / __ | _\ \  ${RESET}"
     echo -e "${CYAN}/___/  /_/|_/  /____/ /___/  |___/  /___/  /_/    /___/  /_/ |_|/___/  ${RESET}"
     echo -e ""
+    echo -e "${YELLOW}Подписывайтесь на Telegram: https://t.me/CryptalikBTC${RESET}"
+    echo -e "${YELLOW}Подписывайтесь на YouTube: https://www.youtube.com/@Cryptalik${RESET}"
+    echo -e "${YELLOW}Здесь про аирдропы и ноды: https://t.me/indivitias${RESET}"
+    echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
+    echo -e ""
+    echo -e "${CYAN}Полезные команды:${RESET}"
+    echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ll"
+    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd ocean"
+    echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
+    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из директории ocean:${RESET} bash OCEAN1.sh"
+    echo -e ""
 }
+
+# Функция для получения IP-адреса
+get_ip_address() {
+    ip_address=$(hostname -I | awk '{print $1}')
+    if [[ -z "$ip_address" ]]; then
+        echo -ne "${YELLOW}Не удалось автоматически определить IP-адрес.${RESET}"
+        echo -ne "${YELLOW} Пожалуйста, введите IP-адрес:${RESET} "
+        read ip_address
+    fi
+    echo "$ip_address"
+}
+
+show_menu() {
+    clear
+    draw_top_border
+    display_ascii
+    draw_middle_border
+    print_telegram_icon
+    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
+    draw_middle_border
+
+    # Отображаем текущую рабочую директорию и IP-адрес
+    current_dir=$(pwd)
+    ip_address=$(get_ip_address)
+    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
+    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
+    draw_middle_border
 
 # Функция для проверки портов
 check_ports() {
