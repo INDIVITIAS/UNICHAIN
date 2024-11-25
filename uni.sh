@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Определения цветов и форматирования
+# Определение цветов
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -9,7 +9,8 @@ YELLOW='\033[1;33m'
 MAGENTA='\033[0;35m'
 RESET='\033[0m'
 
-# Иконки для пунктов меню
+# Иконки для меню
+ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
 ICON_LOGS="📄"
 ICON_STOP="⏹️"
@@ -33,7 +34,12 @@ draw_bottom_border() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
 }
 
-# Логотип и информация
+# Функция для вывода информации о Telegram
+print_telegram_icon() {
+    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
+}
+
+# Вывод ASCII-логотипа и ссылок
 display_ascii() {
     echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
     echo -e "${CYAN}  /  _/  / |/ /  / _ \  /  _/| | / /  /  _//_  __/  /  _/  / _ |  / __/${RESET}"
@@ -46,12 +52,39 @@ display_ascii() {
     echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
     echo -e ""
     echo -e "${CYAN}Полезные команды:${RESET}"
-    echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ll"
-    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd ocean"
+    echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ls"
+    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd docker-browser"
     echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
-    echo -e "  - ${YELLOW}Запуск меню скрипта (не установка) из директории ocean:${RESET} bash OCEAN1.sh"
     echo -e ""
 }
+
+# Получение IP-адреса
+get_ip_address() {
+    ip_address=$(hostname -I | awk '{print $1}')
+    if [[ -z "$ip_address" ]]; then
+        echo -ne "${YELLOW}Не удалось автоматически определить IP-адрес.${RESET}"
+        echo -ne "${YELLOW} Пожалуйста, введите IP-адрес:${RESET} "
+        read ip_address
+    fi
+    echo "$ip_address"
+}
+
+# Основное меню
+show_menu() {
+    clear
+    draw_top_border
+    display_ascii
+    draw_middle_border
+    print_telegram_icon
+    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
+    draw_middle_border
+
+    # Текущая директория и IP-адрес
+    current_dir=$(pwd)
+    ip_address=$(get_ip_address)
+    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
+    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
+    draw_middle_border
 
 # Установка ноды
 download_node() {
