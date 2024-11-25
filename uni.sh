@@ -10,7 +10,6 @@ MAGENTA='\033[0;35m'
 RESET='\033[0m'
 
 # Иконки для пунктов меню
-ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
 ICON_LOGS="📄"
 ICON_STOP="⏹️"
@@ -34,10 +33,6 @@ draw_bottom_border() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
 }
 
-print_telegram_icon() {
-    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
-}
-
 # Логотип и информация
 display_ascii() {
     echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
@@ -58,6 +53,7 @@ display_ascii() {
     echo -e ""
 }
 
+# Установка ноды
 download_node() {
   echo 'Начинаю установку...'
 
@@ -86,6 +82,7 @@ download_node() {
   sudo docker-compose up -d
 }
 
+# Перезагрузка ноды
 restart_node() {
   HOMEDIR="$HOME"
   sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
@@ -94,6 +91,7 @@ restart_node() {
   echo 'Unichain был перезагружен'
 }
 
+# Проверка состояния ноды
 check_node() {
   response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
     -H "Content-Type: application/json" http://localhost:8545)
@@ -101,29 +99,36 @@ check_node() {
   echo -e "${BLUE}RESPONSE:${RESET} $response"
 }
 
+# Логи Unichain OP
 check_logs_op_node() {
   sudo docker logs unichain-node-op-node-1
 }
 
+# Логи Unichain
 check_logs_unichain() {
   sudo docker logs unichain-node-execution-client-1
 }
 
+# Остановка ноды
 stop_node() {
   HOMEDIR="$HOME"
   sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
 }
 
+# Отображение приватного ключа
 display_private_key() {
   cd $HOME
   echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
 }
 
+# Выход из скрипта
 exit_from_script() {
   exit 0
 }
 
+# Основное меню
 while true; do
+    clear
     display_ascii
     sleep 2
     echo -e "\n\nМеню:"
