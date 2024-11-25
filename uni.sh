@@ -39,34 +39,36 @@ print_telegram_icon() {
     echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
 }
 
-# Вывод ASCII-логотипа и ссылок
-display_ascii() {
-    echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
-    echo -e "${CYAN}  /  _/  / |/ /  / _ \  /  _/| | / /  /  _//_  __/  /  _/  / _ |  / __/${RESET}"
-    echo -e "${CYAN} _/ /   /    /  / // / _/ /  | |/ /  _/ /   / /    _/ /   / __ | _\ \  ${RESET}"
-    echo -e "${CYAN}/___/  /_/|_/  /____/ /___/  |___/  /___/  /_/    /___/  /_/ |_|/___/  ${RESET}"
-    echo -e ""
-    echo -e "${YELLOW}Подписывайтесь на Telegram: https://t.me/CryptalikBTC${RESET}"
-    echo -e "${YELLOW}Подписывайтесь на YouTube: https://www.youtube.com/@Cryptalik${RESET}"
-    echo -e "${YELLOW}Здесь про аирдропы и ноды: https://t.me/indivitias${RESET}"
-    echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
-    echo -e ""
-    echo -e "${CYAN}Полезные команды:${RESET}"
-    echo -e "  - ${YELLOW}Просмотр файлов директории:${RESET} ls"
-    echo -e "  - ${YELLOW}Вход в директорию:${RESET} cd docker-browser"
-    echo -e "  - ${YELLOW}Выход из директории:${RESET} cd .."
-    echo -e ""
+# Функция для установки Docker
+install_docker() {
+    echo -e "${GREEN}🟢 Проверка и установка Docker...${RESET}"
+    
+    if ! command -v docker &> /dev/null; then
+        echo -e "${YELLOW}Docker не найден. Устанавливаем Docker...${RESET}"
+
+        sudo apt update
+        sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        
+        echo -e "${GREEN}✅ Docker успешно установлен!${RESET}"
+    else
+        echo -e "${GREEN}Docker уже установлен.${RESET}"
+    fi
 }
 
-# Получение IP-адреса
-get_ip_address() {
-    ip_address=$(hostname -I | awk '{print $1}')
-    if [[ -z "$ip_address" ]]; then
-        echo -ne "${YELLOW}Не удалось автоматически определить IP-адрес.${RESET}"
-        echo -ne "${YELLOW} Пожалуйста, введите IP-адрес:${RESET} "
-        read ip_address
-    fi
-    echo "$ip_address"
+# Функция для исправления прерванных установок
+fix_dpkg() {
+    echo -e "${GREEN}🟢 Исправляем прерванные установки пакетов...${RESET}"
+    sudo dpkg --configure -a
+    sudo apt update
+    sudo apt upgrade -y
+    echo -e "${GREEN}✅ Прерванные установки исправлены.${RESET}"
 }
 
 # Функция установки ноды
@@ -76,16 +78,15 @@ install_node() {
         echo -e "${YELLOW}🟡 Нода уже установлена.${RESET}"
     else
         echo -e "${GREEN}🟢 Установка ноды...${RESET}"
-        sudo apt update && sudo apt upgrade -y
-        sudo apt install docker.io -y
-        sudo systemctl start docker
-        sudo systemctl enable docker
+
+        fix_dpkg
+        install_docker
 
         sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
         sudo chmod +x /usr/local/bin/docker-compose
 
-        git clone https://github.com/Uniswap/unichain-node
-        cd unichain-node || { echo -e "${RED}❌ Не удалось войти в директорию unichain-node.${RESET}"; return; }
+        git clone https://github.com/INDIVITIAS/UNICHAIN.git
+        cd UNICHAIN || { echo -e "${RED}❌ Не удалось войти в директорию UNICHAIN.${RESET}"; return; }
 
         if [[ -f .env.sepolia ]]; then
             sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
@@ -107,7 +108,7 @@ install_node() {
 stop_node() {
     echo -e "${GREEN}⏹️ Остановка ноды...${RESET}"
     HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
+    sudo docker-compose -f "${HOMEDIR}/UNICHAIN/docker-compose.yml" down
     echo -e "${GREEN}✅ Нода остановлена.${RESET}"
     echo
     read -p "Нажмите Enter, чтобы вернуться в главное меню..."
@@ -117,7 +118,7 @@ stop_node() {
 start_node() {
     echo -e "${GREEN}▶️ Запуск ноды...${RESET}"
     HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
+    sudo docker-compose -f "${HOMEDIR}/UNICHAIN/docker-compose.yml" up -d
     echo -e "${GREEN}✅ Нода запущена.${RESET}"
     echo
     read -p "Нажмите Enter, чтобы вернуться в главное меню..."
@@ -127,8 +128,8 @@ start_node() {
 change_rpc() {
     echo -e "${CYAN}🔄 Изменение RPC...${RESET}"
     HOMEDIR="$HOME"
-    if [[ -f "${HOMEDIR}/unichain-node/.env.sepolia" ]]; then
-        sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://new-rpc-url|' "${HOMEDIR}/unichain-node/.env.sepolia"
+    if [[ -f "${HOMEDIR}/UNICHAIN/.env.sepolia" ]]; then
+        sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://new-rpc-url|' "${HOMEDIR}/UNICHAIN/.env.sepolia"
         echo -e "${GREEN}✅ RPC изменен.${RESET}"
     else
         echo -e "${RED}❌ Файл .env.sepolia не найден!${RESET}"
@@ -141,8 +142,8 @@ change_rpc() {
 delete_node() {
     echo -e "${RED}🗑️ Удаление ноды...${RESET}"
     HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    sudo rm -rf "${HOMEDIR}/unichain-node"
+    sudo docker-compose -f "${HOMEDIR}/UNICHAIN/docker-compose.yml" down
+    sudo rm -rf "${HOMEDIR}/UNICHAIN"
     echo -e "${GREEN}✅ Нода удалена.${RESET}"
     echo
     read -p "Нажмите Enter, чтобы вернуться в главное меню..."
@@ -152,8 +153,8 @@ delete_node() {
 display_private_key() {
     HOMEDIR="$HOME"
     echo -e "${YELLOW}Ваш приватный ключ:${RESET}"
-    if [[ -f "${HOMEDIR}/unichain-node/geth-data/geth/nodekey" ]]; then
-        cat "${HOMEDIR}/unichain-node/geth-data/geth/nodekey"
+    if [[ -f "${HOMEDIR}/UNICHAIN/geth-data/geth/nodekey" ]]; then
+        cat "${HOMEDIR}/UNICHAIN/geth-data/geth/nodekey"
     else
         echo -e "${RED}❌ Файл с приватным ключом не найден!${RESET}"
     fi
@@ -165,33 +166,16 @@ display_private_key() {
 show_menu() {
     clear
     draw_top_border
-    display_ascii
-    draw_middle_border
-    print_telegram_icon
-    echo -e "    ${BLUE}Криптан, подпишись!: ${YELLOW}https://t.me/indivitias${RESET}"
-    draw_middle_border
-
-    # Текущая директория и IP-адрес
-    current_dir=$(pwd)
-    ip_address=$(get_ip_address)
-    echo -e "    ${GREEN}Текущая директория:${RESET} ${current_dir}"
-    echo -e "    ${GREEN}IP-адрес:${RESET} ${ip_address}"
-    draw_middle_border
-
-    echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL} Установить ноду"
-    echo -e "    ${CYAN}2.${RESET} ${ICON_START} Запустить ноду"
-    echo -e "    ${CYAN}3.${RESET} ${ICON_STOP} Остановить ноду"
-    echo -e "    ${CYAN}4.${RESET} ${ICON_LOGS} Просмотреть логи"
-    echo -e "    ${CYAN}5.${RESET} ${ICON_CHANGE_RPC} Изменить RPC"
-    echo -e "    ${CYAN}6.${RESET} ${ICON_DELETE} Удалить ноду"
-    echo -e "    ${CYAN}7.${RESET} ${ICON_WALLET} Показать приватный ключ"
-    echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Выход"
-    echo
+    echo -e "${YELLOW}1. Установить ноду${RESET}"
+    echo -e "${YELLOW}2. Запустить ноду${RESET}"
+    echo -e "${YELLOW}3. Остановить ноду${RESET}"
+    echo -e "${YELLOW}4. Просмотреть логи${RESET}"
+    echo -e "${YELLOW}5. Изменить RPC${RESET}"
+    echo -e "${YELLOW}6. Удалить ноду${RESET}"
+    echo -e "${YELLOW}7. Показать приватный ключ${RESET}"
+    echo -e "${YELLOW}0. Выход${RESET}"
     draw_bottom_border
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${CYAN}║${RESET}   ${YELLOW}Введите ваш выбор [0-7]:${RESET}           ${CYAN}║${RESET}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
-    read -p " " choice
+    read -p "Введите ваш выбор [0-7]: " choice
 }
 
 # Основной цикл
@@ -225,8 +209,6 @@ while true; do
             ;;
         *)
             echo -e "${RED}❌ Неверный выбор. Попробуйте снова.${RESET}"
-            echo
-            read -p "Нажмите Enter для продолжения..."
             ;;
     esac
 done
