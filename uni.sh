@@ -189,7 +189,7 @@ show_menu() {
     echo
     draw_bottom_border
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${CYAN}║${RESET}              ${YELLOW}Введите ваш выбор [0-7]:${RESET}           ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}   ${YELLOW}Введите ваш выбор [0-7]:${RESET}           ${CYAN}║${RESET}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
     read -p " " choice
 }
