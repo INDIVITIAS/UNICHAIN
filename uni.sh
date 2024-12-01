@@ -122,6 +122,36 @@ display_private_key() {
 }
 
 while true; do
+draw_top_border() {
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
+}
+
+draw_middle_border() {
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════╣${RESET}"
+}
+
+draw_bottom_border() {
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
+}
+
+# Функция для вывода информации о Telegram
+print_telegram_icon() {
+    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
+}
+
+# Вывод ASCII-логотипа и ссылок
+display_ascii() {
+    echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
+    echo -e "${CYAN}  /  _/  / |/ /  / _ \\  /  _/| | / /  /  _//_  __/  /  _/  / _ |  / __/${RESET}"
+    echo -e "${CYAN} _/ /   /    /  / // / _/ /  | |/ /  _/ /   / /    _/ /   / __ | _\\ \\  ${RESET}"
+    echo -e "${CYAN}/___/  /_/|_/  /____/ /___/  |___/  /___/  /_/    /___/  /_/ |_|/___/  ${RESET}"
+    echo -e ""
+    echo -e "${YELLOW}Подписывайтесь на Telegram: https://t.me/CryptalikBTC${RESET}"
+    echo -e "${YELLOW}Подписывайтесь на YouTube: https://www.youtube.com/@Cryptalik${RESET}"
+    echo -e "${YELLOW}Здесь про аирдропы и ноды: https://t.me/indivitias${RESET}"
+    echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
+    echo -e ""
+}
     draw_middle_border
     echo -e "    ${GREEN}Здравия желаю, криптан! Привествую тебя в меню управлния${RESET}"
     echo -e "                 ${GREEN}нодой UNICHAIN.${RESET}"
