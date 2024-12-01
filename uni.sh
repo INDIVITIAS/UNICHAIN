@@ -61,7 +61,6 @@ channel_logo() {
     draw_bottom_border
 }
 
-
 download_node() {
     echo 'Начинаю установку...'
 
@@ -91,17 +90,14 @@ download_node() {
 }
 
 restart_node() {
-    HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
-
+    sudo docker-compose -f "$HOME/UNICHAIN/unichain-node/docker-compose.yml" down
+    sudo docker-compose -f "$HOME/UNICHAIN/unichain-node/docker-compose.yml" up -d
     echo 'Unichain был перезагружен'
 }
 
 check_node() {
     response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
       -H "Content-Type: application/json" http://localhost:8545)
-
     echo -e "${BLUE}RESPONSE:${RESET} $response"
 }
 
@@ -114,12 +110,11 @@ check_logs_unichain() {
 }
 
 stop_node() {
-    HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
+    sudo docker-compose -f "$HOME/UNICHAIN/unichain-node/docker-compose.yml" down
 }
 
 display_private_key() {
-    cd $HOME
+    cd $HOME/UNICHAIN/unichain-node
     echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
 }
 
@@ -136,11 +131,10 @@ while true; do
     echo "2. ${ICON_RESTART} Перезагрузить ноду"
     echo "3. ${ICON_CHECK} Проверить ноду"
     echo "4. ${ICON_LOG_OP_NODE} Посмотреть логи Unichain (OP)"
-    echo "5. ${ICON_LOG_EXEC_CLIENT} Посмотреть логи Unichain"
+    echo "5. ${ICON_LOGS} Посмотреть логи Unichain"
     echo "6. ${ICON_STOP} Остановить ноду"
     echo "7. ${ICON_PRIVATE_KEY} Посмотреть приватный ключ"
     echo -e "8. ${ICON_EXIT} Выйти из скрипта\n"
-    draw_middle_border
     read -p "Выберите пункт меню: " choice
 
     case $choice in
@@ -172,4 +166,4 @@ while true; do
         echo "Неверный пункт. Пожалуйста, выберите правильную цифру в меню."
         ;;
     esac
-  done
+done
