@@ -54,117 +54,122 @@ display_ascii() {
     echo -e ""
 }
 
-# Функции
+# Функции для операций с нодой
+channel_logo() {
+    draw_top_border
+    display_ascii
+    draw_bottom_border
+}
+
+
 download_node() {
     echo 'Начинаю установку...'
+
     sudo apt update -y && sudo apt upgrade -y
     sudo apt-get install make build-essential unzip lz4 gcc git jq -y
+
     sudo apt install docker.io -y
+
     sudo systemctl start docker
     sudo systemctl enable docker
+
     sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
-    git clone https://github.com/Uniswap/unichain-node || { echo -e "${RED}Не удалось клонировать репозиторий.${RESET}"; return; }
-    cd unichain-node || { echo -e "${RED}Не получилось зайти в директорию.${RESET}"; return; }
+
+    git clone https://github.com/Uniswap/unichain-node
+    cd unichain-node || { echo -e "Не получилось зайти в директорию"; return; }
+  
     if [[ -f .env.sepolia ]]; then
         sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
         sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
     else
-        echo -e "${RED}Sepolia ENV не было найдено.${RESET}"
+        echo -e "Sepolia ENV не было найдено"
         return
     fi
-    sudo docker-compose up -d || { echo -e "${RED}Не удалось запустить docker-compose.${RESET}"; return; }
-    echo -e "${GREEN}✅ Нода успешно установлена.${RESET}"
-    read -p "Нажми Enter для возврата в меню..."
+
+    sudo docker-compose up -d
 }
 
 restart_node() {
-    echo -e "${GREEN}🔄 Перезапуск ноды...${RESET}"
     HOMEDIR="$HOME"
     sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
     sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" up -d
-    echo -e "${GREEN}✅ Нода перезапущена.${RESET}"
-    read -p "Нажми Enter для возврата в меню..."
+
+    echo 'Unichain был перезагружен'
 }
 
 check_node() {
-    echo -e "${GREEN}✅ Проверка статуса ноды...${RESET}"
     response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
       -H "Content-Type: application/json" http://localhost:8545)
-    if [[ -n "$response" ]]; then
-        echo -e "${BLUE}Ответ:${RESET} $response"
-    else
-        echo -e "${RED}❌ Нода не отвечает.${RESET}"
-    fi
-    read -p "Нажми Enter для возврата в меню..."
+
+    echo -e "${BLUE}RESPONSE:${RESET} $response"
 }
 
 check_logs_op_node() {
-    echo -e "${GREEN}📄 Проверка логов для unichain-node-op-node-1...${RESET}"
-    sudo docker logs unichain-node-op-node-1 || { echo -e "${RED}❌ Не удалось получить логи.${RESET}"; }
-    read -p "Нажми Enter для возврата в меню..."
+    sudo docker logs unichain-node-op-node-1
 }
 
-check_logs_execution_client() {
-    echo -e "${GREEN}📄 Проверка логов для unichain-node-execution-client-1...${RESET}"
-    sudo docker logs unichain-node-execution-client-1 || { echo -e "${RED}❌ Не удалось получить логи.${RESET}"; }
-    read -p "Нажми Enter для возврата в меню..."
+check_logs_unichain() {
+    sudo docker logs unichain-node-execution-client-1
 }
 
-disable_node() {
-    echo -e "${GREEN}⏹️ Остановка ноды...${RESET}"
+stop_node() {
     HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down || { echo -e "${RED}❌ Не удалось остановить ноду.${RESET}"; }
-    echo -e "${GREEN}✅ Нода была остановлена.${RESET}"
-    read -p "Нажми Enter для возврата в меню..."
+    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
 }
 
 display_private_key() {
-    if [[ -f "$HOME/unichain-node/geth-data/geth/nodekey" ]]; then
-        echo -e "${YELLOW}Ваш приватник:${RESET} \n"
-        cat "$HOME/unichain-node/geth-data/geth/nodekey"
-    else
-        echo -e "${RED}❌ Приватный ключ не найден.${RESET}"
-    fi
-    read -p "Нажми Enter для возврата в меню..."
+    cd $HOME
+    echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
 }
 
-# Основной цикл меню
+exit_from_script() {
+    exit 0
+}
+
 while true; do
+    channel_logo
+    sleep 2
     draw_top_border
-    display_ascii
+    echo -e "Меню:"
+    echo "1. ${ICON_INSTALL} Установить ноду"
+    echo "2. ${ICON_RESTART} Перезагрузить ноду"
+    echo "3. ${ICON_CHECK} Проверить ноду"
+    echo "4. ${ICON_LOG_OP_NODE} Посмотреть логи Unichain (OP)"
+    echo "5. ${ICON_LOG_EXEC_CLIENT} Посмотреть логи Unichain"
+    echo "6. ${ICON_STOP} Остановить ноду"
+    echo "7. ${ICON_PRIVATE_KEY} Посмотреть приватный ключ"
+    echo -e "8. ${ICON_EXIT} Выйти из скрипта\n"
     draw_middle_border
-    echo -e "    ${YELLOW}Сделай свой выбор:${RESET}"
-    echo
-    echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL} Установить ноду"
-    echo -e "    ${CYAN}2.${RESET} ${ICON_RESTART} Перезапустить ноду"
-    echo -e "    ${CYAN}3.${RESET} ${ICON_CHECK} Проверить ноду"
-    echo -e "    ${CYAN}4.${RESET} ${ICON_LOG_OP_NODE} Проверить логи для unichain node op node"
-    echo -e "    ${CYAN}5.${RESET} ${ICON_LOG_EXEC_CLIENT} Проверить логи для unichain node execution client"
-    echo -e "    ${CYAN}6.${RESET} ${ICON_DISABLE} Остановить ноду"
-    echo -e "    ${CYAN}7.${RESET} ${ICON_PRIVATE_KEY} Показать приватник"
-    echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Выход"
-    echo
-    draw_bottom_border
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${CYAN}║${RESET}              ${YELLOW}Сюда вводи [0-7]:${RESET}           ${CYAN}║${RESET}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════╝${RESET}"
-    read -p " " choice
-	
+    read -p "Выберите пункт меню: " choice
+
     case $choice in
-        1) download_node ;;
-        2) restart_node ;;
-        3) check_node ;;
-        4) check_logs_op_node ;;
-        5) check_logs_execution_client ;;
-        6) disable_node ;;
-        7) display_private_key ;;
-        0) 
-            echo -e "${GREEN}❌ Выход...${RESET}"
-            exit 0 
-            ;;
-        *) 
-            echo -e "${RED}❌ Неверный ввод. Пробуй еще.${RESET}"
-            ;;
+      1)
+        download_node
+        ;;
+      2)
+        restart_node
+        ;;
+      3)
+        check_node
+        ;;
+      4)
+        check_logs_op_node
+        ;;
+      5)
+        check_logs_unichain
+        ;;
+      6)
+        stop_node
+        ;;
+      7)
+        display_private_key
+        ;;
+      8)
+        exit_from_script
+        ;;
+      *)
+        echo "Неверный пункт. Пожалуйста, выберите правильную цифру в меню."
+        ;;
     esac
-done
+  done
