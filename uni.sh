@@ -54,16 +54,6 @@ display_ascii() {
     echo -e ""
 }
 
-# Проверка зависимостей
-check_dependencies() {
-    for cmd in curl docker docker-compose git; do
-        if ! command -v $cmd &> /dev/null; then
-            echo -e "${RED}❌ Необходимая зависимость '$cmd' не установлена. Пожалуйста, установите её.${RESET}"
-            exit 1
-        fi
-    done
-}
-
 # Функции
 download_node() {
     echo 'Начинаю установку...'
@@ -140,7 +130,6 @@ display_private_key() {
 }
 
 # Основной цикл меню
-check_dependencies
 while true; do
     draw_top_border
     display_ascii
@@ -161,7 +150,7 @@ while true; do
     echo -e "${CYAN}║${RESET}              ${YELLOW}Сюда вводи [0-7]:${RESET}           ${CYAN}║${RESET}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════╝${RESET}"
     read -p " " choice
-
+	
     case $choice in
         1) download_node ;;
         2) restart_node ;;
