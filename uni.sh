@@ -20,6 +20,12 @@ ICON_EXIT="❌"
 ICON_CHANGE_RPC="🔄"
 ICON_DELETE="🗑️"
 ICON_KEFIR="🍼"
+ICON_RESTART="🔄"
+ICON_CHECK="✅"
+ICON_LOG_OP_NODE="📜"
+ICON_LOG_EXEC_CLIENT="📜"
+ICON_DISABLE="⏹️"
+ICON_PRIVATE_KEY="🔑"
 
 # Функции для рисования границ
 draw_top_border() {
@@ -52,6 +58,7 @@ display_ascii() {
     echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
     echo -e ""
 }
+
 
 # Функции
 download_node() {
@@ -122,38 +129,8 @@ display_private_key() {
 }
 
 while true; do
-draw_top_border() {
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
-}
-
-draw_middle_border() {
-    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════╣${RESET}"
-}
-
-draw_bottom_border() {
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
-}
-
-# Функция для вывода информации о Telegram
-print_telegram_icon() {
-    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
-}
-
-# Вывод ASCII-логотипа и ссылок
-display_ascii() {
-    echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
-    echo -e "${CYAN}  /  _/  / |/ /  / _ \\  /  _/| | / /  /  _//_  __/  /  _/  / _ |  / __/${RESET}"
-    echo -e "${CYAN} _/ /   /    /  / // / _/ /  | |/ /  _/ /   / /    _/ /   / __ | _\\ \\  ${RESET}"
-    echo -e "${CYAN}/___/  /_/|_/  /____/ /___/  |___/  /___/  /_/    /___/  /_/ |_|/___/  ${RESET}"
-    echo -e ""
-    echo -e "${YELLOW}Подписывайтесь на Telegram: https://t.me/CryptalikBTC${RESET}"
-    echo -e "${YELLOW}Подписывайтесь на YouTube: https://www.youtube.com/@Cryptalik${RESET}"
-    echo -e "${YELLOW}Здесь про аирдропы и ноды: https://t.me/indivitias${RESET}"
-    echo -e "${YELLOW}Купи мне крипто бутылочку... ${ICON_KEFIR}кефира 😏${RESET} ${MAGENTA} 👉  https://bit.ly/4eBbfIr  👈 ${MAGENTA}"
-    echo -e ""
-}
-    draw_middle_border
-    echo -e "    ${GREEN}Здравия желаю, криптан! Привествую тебя в меню управлния${RESET}"
+    draw_top_border
+    echo -e "    ${GREEN}Здравия желаю, криптан! Приветствую тебя в меню управления${RESET}"
     echo -e "                 ${GREEN}нодой UNICHAIN.${RESET}"
     echo -e "${CYAN}║${RESET}"
     draw_middle_border
@@ -175,32 +152,18 @@ display_ascii() {
     read -p " " choice
 
     case $choice in
-        1)
-            download_node
-            ;;
-        2)
-            restart_node
-            ;;
-        3)
-            check_node
-            ;;
-        4)
-            check_logs_op_node
-            ;;
-        5)
-            check_logs_execution_client
-            ;;
-        6)
-            disable_node
-            ;;
-        7)
-            display_private_key
-            ;;
-        0)
+        1) download_node ;;
+        2) restart_node ;;
+        3) check_node ;;
+        4) check_logs_op_node ;;
+        5) check_logs_execution_client ;;
+        6) disable_node ;;
+        7) display_private_key ;;
+        0) 
             echo -e "${GREEN}❌ Выход...${RESET}"
-            exit 0
+            exit 0 
             ;;
-        *)
+        *) 
             echo -e "${RED}❌ Неверный ввод. Пробуй еще.${RESET}"
             echo
             read -p "Нажми Enter для продолжения..."
