@@ -40,11 +40,6 @@ draw_bottom_border() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
 }
 
-# Функция для вывода информации о Telegram
-print_telegram_icon() {
-    echo -e "          ${MAGENTA}${ICON_TELEGRAM} Подписывайтесь на наш Telegram!${RESET}"
-}
-
 # Вывод ASCII-логотипа и ссылок
 display_ascii() {
     echo -e "${CYAN}   ____   _  __   ___    ____ _   __   ____ ______   ____   ___    ____${RESET}"
@@ -59,6 +54,15 @@ display_ascii() {
     echo -e ""
 }
 
+# Проверка зависимостей
+check_dependencies() {
+    for cmd in curl docker docker-compose git; do
+        if ! command -v $cmd &> /dev/null; then
+            echo -e "${RED}❌ Необходимая зависимость '$cmd' не установлена. Пожалуйста, установите её.${RESET}"
+            exit 1
+        fi
+    done
+}
 
 # Функции
 download_node() {
@@ -70,16 +74,16 @@ download_node() {
     sudo systemctl enable docker
     sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
-    git clone https://github.com/Uniswap/unichain-node
-    cd unichain-node || { echo -e "Не получилось зайти в директорию"; return; }
+    git clone https://github.com/Uniswap/unichain-node || { echo -e "${RED}Не удалось клонировать репозиторий.${RESET}"; return; }
+    cd unichain-node || { echo -e "${RED}Не получилось зайти в директорию.${RESET}"; return; }
     if [[ -f .env.sepolia ]]; then
         sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
         sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
     else
-        echo -e "Sepolia ENV не было найдено"
+        echo -e "${RED}Sepolia ENV не было найдено.${RESET}"
         return
     fi
-    sudo docker-compose up -d
+    sudo docker-compose up -d || { echo -e "${RED}Не удалось запустить docker-compose.${RESET}"; return; }
     echo -e "${GREEN}✅ Нода успешно установлена.${RESET}"
     read -p "Нажми Enter для возврата в меню..."
 }
@@ -97,42 +101,49 @@ check_node() {
     echo -e "${GREEN}✅ Проверка статуса ноды...${RESET}"
     response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
       -H "Content-Type: application/json" http://localhost:8545)
-    echo -e "${BLUE}Ответ:${RESET} $response"
+    if [[ -n "$response" ]]; then
+        echo -e "${BLUE}Ответ:${RESET} $response"
+    else
+        echo -e "${RED}❌ Нода не отвечает.${RESET}"
+    fi
     read -p "Нажми Enter для возврата в меню..."
 }
 
 check_logs_op_node() {
     echo -e "${GREEN}📄 Проверка логов для unichain-node-op-node-1...${RESET}"
-    sudo docker logs unichain-node-op-node-1
+    sudo docker logs unichain-node-op-node-1 || { echo -e "${RED}❌ Не удалось получить логи.${RESET}"; }
     read -p "Нажми Enter для возврата в меню..."
 }
 
 check_logs_execution_client() {
     echo -e "${GREEN}📄 Проверка логов для unichain-node-execution-client-1...${RESET}"
-    sudo docker logs unichain-node-execution-client-1
+    sudo docker logs unichain-node-execution-client-1 || { echo -e "${RED}❌ Не удалось получить логи.${RESET}"; }
     read -p "Нажми Enter для возврата в меню..."
 }
 
 disable_node() {
     echo -e "${GREEN}⏹️ Остановка ноды...${RESET}"
     HOMEDIR="$HOME"
-    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down
+    sudo docker-compose -f "${HOMEDIR}/unichain-node/docker-compose.yml" down || { echo -e "${RED}❌ Не удалось остановить ноду.${RESET}"; }
     echo -e "${GREEN}✅ Нода была остановлена.${RESET}"
     read -p "Нажми Enter для возврата в меню..."
 }
 
 display_private_key() {
-    cd $HOME
-    echo -e "${YELLOW}Ваш приватник:${RESET} \n"
-    cat unichain-node/geth-data/geth/nodekey
+    if [[ -f "$HOME/unichain-node/geth-data/geth/nodekey" ]]; then
+        echo -e "${YELLOW}Ваш приватник:${RESET} \n"
+        cat "$HOME/unichain-node/geth-data/geth/nodekey"
+    else
+        echo -e "${RED}❌ Приватный ключ не найден.${RESET}"
+    fi
     read -p "Нажми Enter для возврата в меню..."
 }
 
+# Основной цикл меню
+check_dependencies
 while true; do
     draw_top_border
-    echo -e "    ${GREEN}Здравия желаю, криптан! Приветствую тебя в меню управления${RESET}"
-    echo -e "                 ${GREEN}нодой UNICHAIN.${RESET}"
-    echo -e "${CYAN}║${RESET}"
+    display_ascii
     draw_middle_border
     echo -e "    ${YELLOW}Сделай свой выбор:${RESET}"
     echo
@@ -165,8 +176,6 @@ while true; do
             ;;
         *) 
             echo -e "${RED}❌ Неверный ввод. Пробуй еще.${RESET}"
-            echo
-            read -p "Нажми Enter для продолжения..."
             ;;
     esac
 done
