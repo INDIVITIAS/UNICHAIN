@@ -61,6 +61,7 @@ channel_logo() {
     draw_bottom_border
 }
 
+# Установка необходимых пакетов и ноды
 download_node() {
     echo 'Начинаю установку...'
 
@@ -75,9 +76,11 @@ download_node() {
     sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
 
+    # Клонируем репозиторий и переходим в папку
     git clone https://github.com/Uniswap/unichain-node
     cd unichain-node || { echo -e "Не получилось зайти в директорию"; return; }
-  
+
+    # Проверяем и изменяем переменные в .env.sepolia
     if [[ -f .env.sepolia ]]; then
         sed -i 's|^OP_NODE_L1_ETH_RPC=.*$|OP_NODE_L1_ETH_RPC=https://ethereum-sepolia-rpc.publicnode.com|' .env.sepolia
         sed -i 's|^OP_NODE_L1_BEACON=.*$|OP_NODE_L1_BEACON=https://ethereum-sepolia-beacon-api.publicnode.com|' .env.sepolia
@@ -89,39 +92,63 @@ download_node() {
     sudo docker-compose up -d
 }
 
+# Перезагрузка ноды
 restart_node() {
-    sudo docker-compose -f "$HOME/UNICHAIN/unichain-node/docker-compose.yml" down
-    sudo docker-compose -f "$HOME/UNICHAIN/unichain-node/docker-compose.yml" up -d
+    local NODE_DIR="$HOME/UNICHAIN/unichain-node"
+    if [[ ! -d "$NODE_DIR" ]]; then
+        echo "Каталог с нодой не найден!"
+        return
+    fi
+
+    sudo docker-compose -f "$NODE_DIR/docker-compose.yml" down
+    sudo docker-compose -f "$NODE_DIR/docker-compose.yml" up -d
     echo 'Unichain был перезагружен'
 }
 
+# Проверка статуса ноды
 check_node() {
     response=$(curl -s -d '{"id":1,"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false]}' \
       -H "Content-Type: application/json" http://localhost:8545)
     echo -e "${BLUE}RESPONSE:${RESET} $response"
 }
 
+# Проверка логов OP ноды
 check_logs_op_node() {
     sudo docker logs unichain-node-op-node-1
 }
 
+# Проверка логов Unichain
 check_logs_unichain() {
     sudo docker logs unichain-node-execution-client-1
 }
 
+# Остановка ноды
 stop_node() {
-    sudo docker-compose -f "$HOME/UNICHAIN/unichain-node/docker-compose.yml" down
+    local NODE_DIR="$HOME/UNICHAIN/unichain-node"
+    if [[ ! -d "$NODE_DIR" ]]; then
+        echo "Каталог с нодой не найден!"
+        return
+    fi
+
+    sudo docker-compose -f "$NODE_DIR/docker-compose.yml" down
 }
 
+# Отображение приватного ключа
 display_private_key() {
-    cd $HOME/UNICHAIN/unichain-node
-    echo -e 'Ваш приватник: \n' && cat unichain-node/geth-data/geth/nodekey
+    local NODE_DIR="$HOME/UNICHAIN/unichain-node"
+    if [[ ! -f "$NODE_DIR/geth-data/geth/nodekey" ]]; then
+        echo "Приватный ключ не найден!"
+        return
+    fi
+    echo -e 'Ваш приватник: \n' && cat "$NODE_DIR/geth-data/geth/nodekey"
 }
 
+# Завершение работы скрипта
 exit_from_script() {
     exit 0
 }
 
+# Главный цикл меню
 while true; do
     channel_logo
     sleep 2
